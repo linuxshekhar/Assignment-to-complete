@@ -10,7 +10,7 @@
 #
 # ----------------------------------------------------------------------------
 #
-# Date: June 15, 2014 | Last updated: June 17, 2014
+# Date: June 15, 2014 | Last updated: July 07, 2014
 #
 # ----------------------------------------------------------------------------
 #
@@ -68,11 +68,6 @@ then
 	exit 
 fi
 
-
-echo "$txtblu Packages are updating through apt-get, Please wait...... $txtrst"
-apt-get update >> $SCR_INS_LOG
-
-
 echo "`date`" | tee -ai $SCR_INS_LOG
 echo " OS Version is $txtbld$bgmgt$txtylw $VERSION $txtrst \n IP_Address is $txtbld$bgmgt$txtylw $IP $txtrst" >> $SCR_INS_LOG
 
@@ -84,8 +79,8 @@ MENU=" `cat /tmp/menu`
     We are going to install Wordpress.
     For efficiency, WE have devide the script into some part. Please find the details make your choise.
 
-	1   Download Wordpress
-	2   Install LEMP Server
+	1   Install LEMP Server
+	2   Download Wordpress
 	3   Install Wordpress with Domain name & other details
 	4   quit"
 
@@ -96,25 +91,12 @@ echo -n "Please make your choice: "
 read INPUT # Read user input and assign it to variable INPUT
 
 case $INPUT in
-   1)  ## If User Press 1 Then Script Starts from here
 
-	echo " $txtbld$bgmgt$txtylw Wordpress $txtrst is going to download. Please wait" | tee -ai $SCR_INS_LOG
+   1) ## If User Press 1 Then Script Starts from here
 
-	wget http://wordpress.org/latest.zip  >> $SCR_INS_LOG
-
-	if [ "$?" = "0" ]; then
-	        echo " Your Wordpress Source has been downloaded successfully. " | tee -ai $SCR_INS_LOG
-	else
-	        echo -e " $bgred Wordpress is not downloaded properly.$txtrst  \n $txtmgn Please download it and put it in `pwd` $txtrst " | tee -ai $SCR_INS_LOG 
-	        exit
-	fi
-
-	echo "Now $txtblu$txtbld Please Run script again. And Select Next option $txtrst"
-	echo "Now $txtblu$txtbld Phase I completed $txtrst" | tee -ai $SCR_INS_LOG 
-   ;;
-
-
-   2) ## If User Press 2 Then Script Starts from here
+	tput clear
+	echo "$txtblu Packages are updating through apt-get, Please wait...... $txtrst"
+	apt-get update >> $SCR_INS_LOG
 
 	echo "$txtmgn$txtbld LEMP-Server $txtrst is going to install. \n Please Wait ...................... "  | tee -ai $SCR_INS_LOG 
 
@@ -158,7 +140,7 @@ case $INPUT in
 	fi
 
         echo " Installing other $txtylw$txtbld PHP Modules $txtrst$txtylw for using various purpose. $txtrst " | tee -ai $SCR_INS_LOG 
-        apt-get -y install unzip zip elinks php5-mysql php5-curl php5-gd php5-intl php-pear php5-imagick php5-imap php5-mcrypt php5-memcache php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl php5-xcache 
+        apt-get -y install elinks php5-mysql php5-gd php5-intl php5-imap php5-mcrypt php5-memcache php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-tidy php5-xmlrpc php5-xsl php5-xcache 
 
 	/etc/init.d/mysql restart >> $SCR_INS_LOG  
 	/etc/init.d/php5-fpm restart >> $SCR_INS_LOG 
@@ -176,9 +158,35 @@ case $INPUT in
 	echo "$txtblu$txtbld Please Run script again. And Select Next option $txtrst"
    ;;
 	
+   2)  ## If User Press 2 Then Script Starts from here
+
+	tput clear
+	
+	if [ ! -f  latest.tar.gz ]; then
+		echo " $txtbld$bgmgt$txtylw Wordpress $txtrst is going to download. Please wait" | tee -ai $SCR_INS_LOG
+
+		wget http://wordpress.org/latest.tar.gz  >> $SCR_INS_LOG
+
+		if [ "$?" = "0" ]; then
+	        	echo " Your Wordpress Source has been downloaded successfully. " | tee -ai $SCR_INS_LOG
+		else
+		        echo -e " $bgred Wordpress is not downloaded properly.$txtrst  \n $txtmgn Please download it and put it in `pwd` $txtrst " | tee -ai $SCR_INS_LOG 
+	        	exit 2
+		fi
+	else
+		echo " Your Wordpress Source already exist. " | tee -ai $SCR_INS_LOG
+
+	fi
+
+	echo "Now $txtblu$txtbld Please Run script again. And Select Next option $txtrst"
+   ;;
+
    3) ## If User Press 3 Then Script Starts from here
 
 	#----- Asking for Domain Details -----------------
+
+	tput clear
+	
 
 	echo "$txtbld$bgmgt$txtylw Please enter your domain name : $txtrst \n\t eg. google.com yahoo.com $txtrst" | tee -ai $SCR_INS_LOG 
 	read domain # We get Domain variable
@@ -227,7 +235,7 @@ server {
 
 
         location / {
-                try_files \$uri \$uri/ /index.php?q=$uri&$args;
+                try_files \$uri \$uri/ /index.php?q=\$uri&\$args;
         }
 
         error_page 404 /404.html;
@@ -255,10 +263,10 @@ server {
 
 	#----- Wordpress Process starts here -------------
 
-	if ls |grep zip ; then
-	        ls -l |grep zip | awk  '/wordpress|latest/ {print $9}' |while read wp
+	if ls |grep tar.gz ; then
+	        ls -l |grep tar.gz | awk  '/wordpress|latest/ {print $9}' |while read wp
 	do
-		yes A | unzip -o $wp > /dev/null 2>&1
+		tar xvf $wp > /dev/null 2>&1
 		if [ "$?" = "0" ]; then
 			if [ ! -d  $NGINX_HOME/$domain ]; then
 			cp -r wordpress  $NGINX_HOME/$domain
@@ -381,19 +389,21 @@ server {
 		echo " $txtblu All Configuration seems okey  \n  Please go through URL $txtmgn http://$domain \n $txtblu To setup Worpress for further configuration. \n$txtbld$txtblk Thank you for using script. $txtrst  " | tee -ai $SCR_INS_LOG 
 	else
 		clear
-		echo " $bgred Setup is not done properly.$txtrst  \n $txtmgn Please check error logs $txtrst " | tee -ai $SCR_INS_LOG 
+		echo " $bgred Setup is not done properly. NGINX conf error$txtrst  \n $txtmgn Please check error logs $txtrst " | tee -ai $SCR_INS_LOG 
 		exit
 	fi
 
    ;;
 
    4|q|Q) # If user presses 4, q or Q we terminate
+
+            tput clear
 	    exit 0
 
    ;;
 
    *) # All other user input results in an usage message
-	clear
+	tput clear
 	echo Please choose alternatves 1, 2, 3, 4
 	
    ;;
