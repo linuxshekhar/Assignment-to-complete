@@ -102,8 +102,6 @@ case $INPUT in
 
 	#----- Installing Packages -----------------------
 
-	echo "$txtmgn$txtbld LEMP-Server $txtrst is going to install. \n Please Wait " | tee -ai $SCR_INS_LOG
-
 	if [ "`dpkg -l nginx | awk '/nginx/ {print $1}'`" = "ii" ]; then
 	        echo " $txtylw$txtbld NGINX $txtrst$txtylw is installed. Checking another Package $txtrst " | tee -ai $SCR_INS_LOG 
 	else
@@ -155,7 +153,7 @@ case $INPUT in
 	update-rc.d php5-fpm defaults >> $SCR_INS_LOG 
 	
 	clear
-	echo "$txtblu$txtbld Please Run script again. And Select Next option $txtrst"
+	echo "$txtblk$txtbld Please Run script again. And Select Next option $txtrst"
    ;;
 	
    2)  ## If User Press 2 Then Script Starts from here
@@ -174,11 +172,11 @@ case $INPUT in
 	        	exit 2
 		fi
 	else
-		echo " Your Wordpress Source already exist. " | tee -ai $SCR_INS_LOG
+		echo " $txtred Your Wordpress Source already exist. $txtrst" | tee -ai $SCR_INS_LOG
 
 	fi
 
-	echo "Now $txtblu$txtbld Please Run script again. And Select Next option $txtrst"
+	echo "Now $txtblk$txtbld Please Run script again. And Select Next option $txtrst"
    ;;
 
    3) ## If User Press 3 Then Script Starts from here
@@ -206,17 +204,27 @@ case $INPUT in
 	echo "DB_Password name selected as $txtbld$txtblk $dbpasswd  $txtrst" >> $SCR_INS_LOG
 	
 	#----- Adding some entries and Creating needful directories
+	
+	grep $domain /etc/hosts
+	if [ "$?" != "0" ]; then
+		echo -n "$IP \t \t $domain \t\t www.$domain \n"  >> /etc/hosts
+			if [ "$?" = "0" ]; then
+				echo "Host Entry Added to /etc/hosts" >>  $SCR_INS_LOG
+			else
+				echo "Host Entry not Added to /etc/hosts, Please add it manualy"  | tee -ai $SCR_INS_LOG 
+				exit 2
 
-	echo -n "$IP \t \t $domain \t\t www.$domain \n"  >> /etc/hosts
-	if [ "$?" = "0" ]; then
-		echo "Host Entry Added to /etc/hosts" >>  $SCR_INS_LOG
+			fi
 	else
-		echo "Host Entry not Added to /etc/hosts, Please add it manualy"  | tee -ai $SCR_INS_LOG 
-
+		echo "$bgred Host Entry Already Exist $txtrst"  | tee -ai $SCR_INS_LOG
+		exit 2
 	fi
 
-	mkdir $NGINX_LOGS/$domain
-
+	if [ ! -d $NGINX_LOGS/$domain ]; then
+		mkdir $NGINX_LOGS/$domain
+	else
+		echo "Log Folder/File already exist for the mentioned domain" >>  $SCR_INS_LOG
+	fi
 
 	if [ ! -f  /etc/nginx/sites-available/$domain ]; then
 
@@ -258,7 +266,8 @@ server {
 }" > /etc/nginx/sites-available/$domain
 
 	else
-		echo "$txtblk Config File already exist. $txtrst"
+		echo "$bgred NGINX Config File already exist. $txtrst"
+		exit 2
 	fi
 
 	#----- Wordpress Process starts here -------------
@@ -272,11 +281,12 @@ server {
 			cp -r wordpress  $NGINX_HOME/$domain
 		else
 			echo " $bgred Wordpress already exist.$txtrst "
+			exit 2
 		fi
 	else
 	        echo " $bgred Wordpress is not downloaded properly.$txtrst  \n $txtmgn Please Run Script Again OR download it and put it in `pwd` $txtrst "  | tee -ai $SCR_INS_LOG 
 		rm -rf $wp
-	        exit
+	        exit 2
 	fi
 	done
 	else
@@ -290,7 +300,10 @@ server {
 	echo "Please enter your Mysql root user password "
 
 	mysql -h 127.0.0.1 -P 3306 -u root -p --default_character_set=utf8 < /tmp/wordpress
-
+	if [ "$?" != "0" ]; then
+		echo " $bgred Password not entered properly $txtrst " | tee -ai $SCR_INS_LOG
+		exit 2
+	fi
 
 	#----- Wordpress Configuration -------------------
 
@@ -404,7 +417,7 @@ server {
 
    *) # All other user input results in an usage message
 	tput clear
-	echo Please choose alternatves 1, 2, 3, 4
+	echo "$bgred Please choose alternatves 1, 2, 3, 4 $txtrst"
 	
    ;;
 
