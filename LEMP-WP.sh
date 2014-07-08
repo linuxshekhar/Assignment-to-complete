@@ -10,11 +10,11 @@
 #
 # ----------------------------------------------------------------------------
 #
-# Date: June 15, 2014 | Last updated: July 07, 2014
+# Date: June 15, 2014 | Last updated: July 08, 2014
 #
 # ----------------------------------------------------------------------------
 #
-# Tools: NGINX-1, PHP-5.5.9, MySql-5.5, WordPress-latest
+# Tools: NGINX, PHP, MySql, WordPress-latest
 #
 # ----------------------------------------------------------------------------
 
@@ -224,6 +224,7 @@ case $INPUT in
 		mkdir $NGINX_LOGS/$domain
 	else
 		echo "Log Folder/File already exist for the mentioned domain" >>  $SCR_INS_LOG
+		exit 2
 	fi
 
 	if [ ! -f  /etc/nginx/sites-available/$domain ]; then
@@ -272,23 +273,20 @@ server {
 
 	#----- Wordpress Process starts here -------------
 
-	if ls |grep tar.gz ; then
-	        ls -l |grep tar.gz | awk  '/wordpress|latest/ {print $9}' |while read wp
-	do
-		tar xvf $wp > /dev/null 2>&1
+	if [ -f latest.tar.gz ] ; then
+		tar xvf latest.tar.gz > /dev/null 2>&1
 		if [ "$?" = "0" ]; then
-			if [ ! -d  $NGINX_HOME/$domain ]; then
-			cp -r wordpress  $NGINX_HOME/$domain
+			if [ -d  $NGINX_HOME/$domain ]; then
+				echo " $bgred Wordpress already exist.$txtrst "
+				exit 101
+			else
+				cp -r wordpress  $NGINX_HOME/$domain
+			fi
 		else
-			echo " $bgred Wordpress already exist.$txtrst "
-			exit 2
+	        	echo " $bgred Wordpress is not downloaded properly.$txtrst  \n $txtmgn Please Run Script Again OR download it and put it in `pwd` $txtrst "  | tee -ai $SCR_INS_LOG 
+			rm -rf latest.tar.gz
+	        	exit 2
 		fi
-	else
-	        echo " $bgred Wordpress is not downloaded properly.$txtrst  \n $txtmgn Please Run Script Again OR download it and put it in `pwd` $txtrst "  | tee -ai $SCR_INS_LOG 
-		rm -rf $wp
-	        exit 2
-	fi
-	done
 	else
 	        echo "Please copy the Wordpress Source in `pwd`  Aborting." 1>&2
 	        exit 1
@@ -314,6 +312,10 @@ server {
 	sed -i "/DB_PASSWORD/ s/password_here/$dbpasswd/" $NGINX_HOME/$domain/wp-config.php
 	sed -i "/DB_HOST/ s/localhost/127.0.0.1/" $NGINX_HOME/$domain/wp-config.php
 
+	#----- Adding Secrete Keys ------------------
+	SALT=$(curl -L https://api.wordpress.org/secret-key/1.1/salt/)
+	STRING='put your unique phrase here'
+	printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s $NGINX_HOME/$domain/wp-config.php
 
 	#----- Sites Enabling and preparing for access -----
 
