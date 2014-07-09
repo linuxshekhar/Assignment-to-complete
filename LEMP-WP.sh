@@ -10,7 +10,7 @@
 #
 # ----------------------------------------------------------------------------
 #
-# Date: June 15, 2014 | Last updated: July 08, 2014
+# Date: June 15, 2014 | Last updated: July 09, 2014
 #
 # ----------------------------------------------------------------------------
 #
@@ -47,7 +47,7 @@ SCR_INS_LOG=/var/log/script-installation.log
 
 #-------------------------------------------------
 
-# Capture Errors
+#----- Capture Errors ---------------------------
 LOG_CAP()
 {
 	echo "$DT " | tee -ai $SCR_INS_LOG
@@ -69,11 +69,11 @@ then
 fi
 
 echo "`date`" | tee -ai $SCR_INS_LOG
-echo " OS Version is $txtbld$bgmgt$txtylw $VERSION $txtrst \n IP_Address is $txtbld$bgmgt$txtylw $IP $txtrst" >> $SCR_INS_LOG
+echo -ne " OS Version is $txtbld$bgmgt$txtylw $VERSION $txtrst \n IP_Address is $txtbld$bgmgt$txtylw $IP $txtrst" >> $SCR_INS_LOG
 
 clear
 
-echo "   We are using $txtbld$bgmgt$txtylw $VERSION $txtrst \n    Your IP_Address is $txtbld$bgmgt$txtylw $IP $txtrst" > /tmp/menu
+echo -ne "   We are using $txtbld$bgmgt$txtylw $VERSION $txtrst \n    Your IP_Address is $txtbld$bgmgt$txtylw $IP $txtrst" > /tmp/menu
 
 MENU=" `cat /tmp/menu`
     We are going to install Wordpress.
@@ -98,7 +98,7 @@ case $INPUT in
 	echo "$txtblu Packages are updating through apt-get, Please wait...... $txtrst"
 	apt-get update >> $SCR_INS_LOG
 
-	echo "$txtmgn$txtbld LEMP-Server $txtrst is going to install. \n Please Wait ...................... "  | tee -ai $SCR_INS_LOG 
+	echo -ne "$txtmgn$txtbld LEMP-Server $txtrst is going to install. \n Please Wait ...................... "  | tee -ai $SCR_INS_LOG 
 
 	#----- Installing Packages -----------------------
 
@@ -127,6 +127,9 @@ case $INPUT in
 	        echo " $txtylw$txtbld Mysql-Server $txtrst$txtylw is installed. Checking another Package $txtrst " | tee -ai $SCR_INS_LOG 
 	else
 	        echo " $txtylw$txtbld Mysql-Server $txtrst$txtylw is not install. Installing MySql-Server $txtrst " | tee -ai $SCR_INS_LOG 
+		read -p "Please enter MySql ROOT Password: " -s MSPS
+		echo mysql-server-5.1 mysql-server/root_password password $MSPS | debconf-set-selections
+		echo mysql-server-5.1 mysql-server/root_password_again password $MSPS | debconf-set-selections
 	        apt-get install -y mysql-server || LOG_CAP "Unable to install mysql-server"
 	fi
 
@@ -168,7 +171,7 @@ case $INPUT in
 		if [ "$?" = "0" ]; then
 	        	echo " Your Wordpress Source has been downloaded successfully. " | tee -ai $SCR_INS_LOG
 		else
-		        echo -e " $bgred Wordpress is not downloaded properly.$txtrst  \n $txtmgn Please download it and put it in `pwd` $txtrst " | tee -ai $SCR_INS_LOG 
+		        echo -ne " $bgred Wordpress is not downloaded properly.$txtrst  \n $txtmgn Please download it and put it in `pwd` $txtrst " | tee -ai $SCR_INS_LOG 
 	        	exit 2
 		fi
 	else
@@ -185,21 +188,52 @@ case $INPUT in
 
 	tput clear
 	
-
-	echo "$txtbld$bgmgt$txtylw Please enter your domain name : $txtrst \n\t eg. google.com yahoo.com $txtrst" | tee -ai $SCR_INS_LOG 
+	echo -en "$txtbld$bgmgt$txtylw Please enter your domain name : $txtrst \n\t eg. google.com yahoo.com \n $txtrst" | tee -ai $SCR_INS_LOG 
 	read domain # We get Domain variable
+	if [ -n "$domain" ]; then
+		echo "Domain name is not blank." >> $SCR_INS_LOG
+		echo $domain | grep "\." > /dev/null 2>&1
+		if [ $? -ne 0 ]; then
+			echo "$bgred Domain name Should have extension $txtrst"
+			echo "$txtred Please rerun script again.... $txtrst"
+			exit 2
+		else
+			echo "Domain name inserted" >>  $SCR_INS_LOG
+		fi
+	else
+		echo "$txtred Blank Domain name inserted $txtrst" >> $SCR_INS_LOG
+		echo "$bgred Domain name should not be blank. $txtrst"  | tee -ai $SCR_INS_LOG
+		echo "$txtred Please rerun script again.... $txtrst"
+		exit 2
+	fi
+
 	dbname=$domain\_db
-	
-	echo "Domain name selected as $txtbld$txtblk $domain $txtrst \nDB_Name automatically Selected as $txtbld$txtblk $dbname  $txtrst" >> $SCR_INS_LOG
+	echo -ne "Domain name selected as $txtbld$txtblk $domain $txtrst \nDB_Name automatically Selected as $txtbld$txtblk $dbname  $txtrst" >> $SCR_INS_LOG
 	
 
 	echo "$txtbld$bgmgt$txtylw Please enter your Database UserName : $txtrst"
 	read dbuser # We get DB-Username
+	if [ -n "$dbuser" ]; then
+		echo "DB USER name is not blank." >> $SCR_INS_LOG
+	else
+		echo "$txtred Blank DB User name inserted $txtrst" >> $SCR_INS_LOG
+		echo "$bgred DB User name should not be blank. $txtrst"  | tee -ai $SCR_INS_LOG
+		echo "$txtred Please rerun script again.... $txtrst"
+		exit 2
+	fi
 
 	echo "DB_User name selected as $txtbld$txtblk $dbuser $txtrst" >> $SCR_INS_LOG
 
 	echo "$txtbld$bgmgt$txtylw Please enter password for Database UserName: $txtrst"
 	read dbpasswd # We get Password
+	if [ -n "$dbpasswd" ]; then
+		echo "DB Password is not blank." >> $SCR_INS_LOG
+	else
+		echo "$txtred Blank DB password inserted $txtrst" >> $SCR_INS_LOG
+		echo "$bgred DB Password should not be blank. $txtrst"  | tee -ai $SCR_INS_LOG
+		echo "$txtred Please rerun script again.... $txtrst"
+		exit 2
+	fi
 
 	echo "DB_Password name selected as $txtbld$txtblk $dbpasswd  $txtrst" >> $SCR_INS_LOG
 	
@@ -207,7 +241,7 @@ case $INPUT in
 	
 	grep $domain /etc/hosts | grep $IP
 	if [ "$?" != "0" ]; then
-		echo -n "$IP \t \t $domain \t\t www.$domain \n"  >> /etc/hosts
+		echo -e "$IP \t\t $domain \t\t www.$domain \n"  >> /etc/hosts
 			if [ "$?" = "0" ]; then
 				echo "Host Entry Added to /etc/hosts" >>  $SCR_INS_LOG
 			else
@@ -283,7 +317,7 @@ server {
 				cp -r wordpress  $NGINX_HOME/$domain
 			fi
 		else
-	        	echo " $bgred Wordpress is not downloaded properly.$txtrst  \n $txtmgn Please Run Script Again OR download it and put it in `pwd` $txtrst "  | tee -ai $SCR_INS_LOG 
+	        	echo -ne " $bgred Wordpress is not downloaded properly.$txtrst  \n $txtmgn Please Run Script Again OR download it and put it in `pwd` $txtrst "  | tee -ai $SCR_INS_LOG 
 			rm -rf latest.tar.gz
 	        	exit 2
 		fi
@@ -295,9 +329,9 @@ server {
 	#----- Creating Database -------------------------
 
 	echo "CREATE DATABASE \`$dbname\`; GRANT ALL PRIVILEGES ON \`$dbname\`.* TO '$dbuser'@'localhost' IDENTIFIED BY '$dbpasswd';FLUSH PRIVILEGES;" > /tmp/wordpress
-	echo "Please enter your Mysql root user password "
 
-	mysql -h 127.0.0.1 -P 3306 -u root -p --default_character_set=utf8 < /tmp/wordpress
+	read -p "Please enter MySql ROOT Password: " -s MSPS
+	mysql -h 127.0.0.1 -P 3306 --user=root --password=$MSPS --default_character_set=utf8 < /tmp/wordpress
 	if [ "$?" != "0" ]; then
 		echo " $bgred Password not entered properly $txtrst " | tee -ai $SCR_INS_LOG
 		exit 2
@@ -337,7 +371,7 @@ server {
 		sleep 2
 	else
 		clear
-		echo  " $bgred Mysql Service is not running.$txtrst  \n $txtmgn Please check error logs $txtrst "  | tee -ai $SCR_INS_LOG 
+		echo -ne " $bgred Mysql Service is not running.$txtrst  \n $txtmgn Please check error logs $txtrst "  | tee -ai $SCR_INS_LOG 
 		exit
 	fi
 
@@ -346,7 +380,7 @@ server {
 		sleep 2
 	else
 		clear
-		echo  " $bgred NGINX Service is not running.$txtrst  \n $txtmgn Please check error logs $txtrst "  | tee -ai $SCR_INS_LOG 
+		echo -ne " $bgred NGINX Service is not running.$txtrst  \n $txtmgn Please check error logs $txtrst "  | tee -ai $SCR_INS_LOG 
 		exit
 	fi
 
@@ -355,20 +389,19 @@ server {
 		sleep 2
 	else
 		clear
-		echo  " $bgred PHP-FPM Service is not running.$txtrst  \n $txtmgn Please check error logs $txtrst " | tee -ai $SCR_INS_LOG 
+		echo -ne " $bgred PHP-FPM Service is not running.$txtrst  \n $txtmgn Please check error logs $txtrst " | tee -ai $SCR_INS_LOG 
 		exit
 	fi
 
 	# ----- DB Check -----
 
-	echo "Please enter your Mysql root user password "
-	DB_EXIST=`mysqlshow -h 127.0.0.1 -P 3306 --user=root -p $dbname| grep -v Wildcard | grep -o $dbname`
+	DB_EXIST=`mysqlshow -h 127.0.0.1 -P 3306 --user=root --password=$MSPS $dbname| grep -v Wildcard | grep -o $dbname`
 	if [ "$DB_EXIST" = "$dbname" ]; then
 		echo " $txtblu Databse for $txtbld$txtcyn $domain $txtrst$txtblu exist $txtrst " | tee -ai $SCR_INS_LOG 
 		sleep 2
 	else
 		clear
-		echo " $bgred Database for $domain is not exist.$txtrst  \n $txtmgn Please check error logs $txtrst " | tee -ai $SCR_INS_LOG 
+		echo -ne " $bgred Database for $domain is not exist.$txtrst  \n $txtmgn Please check error logs $txtrst " | tee -ai $SCR_INS_LOG 
 		exit
 	fi
 
@@ -379,7 +412,7 @@ server {
 		sleep 2
 	else
 		clear
-		echo " $bgred Setup Directory for $domain is not exist.$txtrst  \n $txtmgn Please check error logs $txtrst " | tee -ai $SCR_INS_LOG 
+		echo -ne " $bgred Setup Directory for $domain is not exist.$txtrst  \n $txtmgn Please check error logs $txtrst " | tee -ai $SCR_INS_LOG 
 		exit 
 	fi
 
@@ -390,7 +423,7 @@ server {
 		sleep 2
 	else
 		clear
-		echo " $bgred NGINX Setup for $domain is not done properly.$txtrst  \n $txtmgn Please check error logs $txtrst " | tee -ai $SCR_INS_LOG 
+		echo -ne " $bgred NGINX Setup for $domain is not done properly.$txtrst  \n $txtmgn Please check error logs $txtrst " | tee -ai $SCR_INS_LOG 
 		exit
 	fi
 
@@ -398,13 +431,13 @@ server {
 
 	nginx -t >> $SCR_INS_LOG 
 	if [ "$?" = "0" ]; then
-		echo "$txtbld$txtcyn NGINX Conf $txtrst$txtblu is tested okey $txtrst " | tee -ai $SCR_INS_LOG 
+		echo -ne "$txtbld$txtcyn NGINX Conf $txtrst$txtblu is tested okey $txtrst " | tee -ai $SCR_INS_LOG 
 		sleep 2
 		clear
-		echo " $txtblu All Configuration seems okey  \n  Please go through URL $txtmgn http://$domain \n $txtblu To setup Worpress for further configuration. \n$txtbld$txtblk Thank you for using script. $txtrst  " | tee -ai $SCR_INS_LOG 
+		echo -ne " $txtblu All Configuration seems okey  \n  Please go through URL $txtmgn http://$domain \n $txtblu To setup Worpress for further configuration. \n$txtbld$txtblk Thank you for using script. \n $txtrst  " | tee -ai $SCR_INS_LOG 
 	else
 		clear
-		echo " $bgred Setup is not done properly. NGINX conf error$txtrst  \n $txtmgn Please check error logs $txtrst " | tee -ai $SCR_INS_LOG 
+		echo -ne " $bgred Setup is not done properly. NGINX conf error$txtrst  \n $txtmgn Please check error logs $txtrst " | tee -ai $SCR_INS_LOG 
 		exit
 	fi
 
