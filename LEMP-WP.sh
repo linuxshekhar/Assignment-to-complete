@@ -205,7 +205,7 @@ case $INPUT in
 	
 	#----- Adding some entries and Creating needful directories
 	
-	grep $domain /etc/hosts
+	grep $domain /etc/hosts | grep $IP
 	if [ "$?" != "0" ]; then
 		echo -n "$IP \t \t $domain \t\t www.$domain \n"  >> /etc/hosts
 			if [ "$?" = "0" ]; then
