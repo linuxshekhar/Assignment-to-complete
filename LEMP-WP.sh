@@ -239,21 +239,6 @@ case $INPUT in
 	
 	#----- Adding some entries and Creating needful directories
 	
-	grep $domain /etc/hosts | grep $IP
-	if [ "$?" != "0" ]; then
-		echo -e "$IP \t\t $domain \t\t www.$domain \n"  >> /etc/hosts
-			if [ "$?" = "0" ]; then
-				echo "Host Entry Added to /etc/hosts" >>  $SCR_INS_LOG
-			else
-				echo "Host Entry not Added to /etc/hosts, Please add it manualy"  | tee -ai $SCR_INS_LOG 
-				exit 2
-
-			fi
-	else
-		echo "$bgred Host Entry Already Exist $txtrst"  | tee -ai $SCR_INS_LOG
-		exit 2
-	fi
-
 	if [ ! -d $NGINX_LOGS/$domain ]; then
 		mkdir $NGINX_LOGS/$domain
 	else
@@ -360,6 +345,14 @@ server {
 	rm -rf /tmp/wordpress
 
 	/etc/init.d/nginx reload >> $SCR_INS_LOG 
+
+	echo -e "$IP \t\t $domain \t\t www.$domain \n"  >> /etc/hosts
+		if [ "$?" = "0" ]; then
+			echo "Host Entry Added to /etc/hosts" >>  $SCR_INS_LOG
+		else
+			echo "Host Entry not Added to /etc/hosts, Please add it manualy"  | tee -ai $SCR_INS_LOG 
+			exit 2
+		fi
 
 
 	#----- Final Information -------------------------
