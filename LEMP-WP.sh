@@ -337,7 +337,7 @@ server {
 	sed -i "/DB_HOST/ s/localhost/127.0.0.1/" $NGINX_HOME/$domain/wp-config.php
 
 	#----- Adding Secrete Keys ------------------
-	SALT=$(curl -L https://api.wordpress.org/secret-key/1.1/salt/) 
+	SALT=$(curl -sLS https://api.wordpress.org/secret-key/1.1/salt/ 2>&1) 
 	STRING='put your unique phrase here'
 	printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s $NGINX_HOME/$domain/wp-config.php
 
