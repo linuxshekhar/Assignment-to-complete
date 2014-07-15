@@ -10,7 +10,7 @@
 #
 # ----------------------------------------------------------------------------
 #
-# Date: June 15, 2014 | Last updated: July 09, 2014
+# Date: June 15, 2014 | Last updated: July 15, 2014
 #
 # ----------------------------------------------------------------------------
 #
@@ -213,8 +213,14 @@ case $INPUT in
 
 	echo "$txtbld$bgmgt$txtylw Please enter your Database UserName : $txtrst"
 	read dbuser # We get DB-Username
+		read -p "Please enter MySql ROOT Password: " -s MSPS
 	if [ -n "$dbuser" ]; then
 		echo "DB USER name is not blank." >> $SCR_INS_LOG
+		mysql -h 127.0.0.1 -P 3306 --user=root --password=$MSPS -e "SELECT User FROM mysql.user;" | grep $dbuser
+			if [ "$?" = "0" ]; then
+				echo " $bgred DB Username $dbuser already exist, Please select another username $txtrst " | tee -ai $SCR_INS_LOG
+			exit 2
+			fi
 	else
 		echo "$txtred Blank DB User name inserted $txtrst" >> $SCR_INS_LOG
 		echo "$bgred DB User name should not be blank. $txtrst"  | tee -ai $SCR_INS_LOG
@@ -224,7 +230,7 @@ case $INPUT in
 
 	echo "DB_User name selected as $txtbld$txtblk $dbuser $txtrst" >> $SCR_INS_LOG
 
-	echo "$txtbld$bgmgt$txtylw Please enter password for Database UserName: $txtrst"
+	echo -e "$txtbld$bgmgt$txtylw \n Please enter password for Database UserName: $txtrst"
 	read dbpasswd # We get Password
 	if [ -n "$dbpasswd" ]; then
 		echo "DB Password is not blank." >> $SCR_INS_LOG
@@ -235,7 +241,7 @@ case $INPUT in
 		exit 2
 	fi
 
-	echo "DB_Password name selected as $txtbld$txtblk $dbpasswd  $txtrst" >> $SCR_INS_LOG
+	echo "DB_Password selected as $txtbld$txtblk $dbpasswd  $txtrst" >> $SCR_INS_LOG
 	
 	#----- Adding some entries and Creating needful directories
 	
@@ -313,14 +319,13 @@ server {
 
 	#----- Creating Database -------------------------
 
-	echo "CREATE DATABASE \`$dbname\`; GRANT ALL PRIVILEGES ON \`$dbname\`.* TO '$dbuser'@'localhost' IDENTIFIED BY '$dbpasswd';FLUSH PRIVILEGES;" > /tmp/wordpress
+		echo "CREATE DATABASE \`$dbname\`; GRANT ALL PRIVILEGES ON \`$dbname\`.* TO '$dbuser'@'localhost' IDENTIFIED BY '$dbpasswd';FLUSH PRIVILEGES;" > /tmp/wordpress
 
-	read -p "Please enter MySql ROOT Password: " -s MSPS
-	mysql -h 127.0.0.1 -P 3306 --user=root --password=$MSPS --default_character_set=utf8 < /tmp/wordpress
-	if [ "$?" != "0" ]; then
-		echo " $bgred Password not entered properly $txtrst " | tee -ai $SCR_INS_LOG
-		exit 2
-	fi
+		mysql -h 127.0.0.1 -P 3306 --user=root --password=$MSPS --default_character_set=utf8 < /tmp/wordpress
+		if [ "$?" != "0" ]; then
+			echo " $bgred Password not entered properly $txtrst " | tee -ai $SCR_INS_LOG
+			exit 2
+		fi
 
 	#----- Wordpress Configuration -------------------
 
@@ -332,7 +337,7 @@ server {
 	sed -i "/DB_HOST/ s/localhost/127.0.0.1/" $NGINX_HOME/$domain/wp-config.php
 
 	#----- Adding Secrete Keys ------------------
-	SALT=$(curl -L https://api.wordpress.org/secret-key/1.1/salt/)
+	SALT=$(curl -L https://api.wordpress.org/secret-key/1.1/salt/ > /dev/null 2>&1)
 	STRING='put your unique phrase here'
 	printf '%s\n' "g/$STRING/d" a "$SALT" . w | ed -s $NGINX_HOME/$domain/wp-config.php
 
@@ -390,7 +395,7 @@ server {
 
 	DB_EXIST=`mysqlshow -h 127.0.0.1 -P 3306 --user=root --password=$MSPS $dbname| grep -v Wildcard | grep -o $dbname`
 	if [ "$DB_EXIST" = "$dbname" ]; then
-		echo " $txtblu Databse for $txtbld$txtcyn $domain $txtrst$txtblu exist $txtrst " | tee -ai $SCR_INS_LOG 
+		echo " $txtblu Databse for $txtbld$txtcyn $domain $txtrst$txtblu is fine $txtrst " | tee -ai $SCR_INS_LOG 
 		sleep 2
 	else
 		clear
